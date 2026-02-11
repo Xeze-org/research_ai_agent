@@ -62,7 +62,7 @@ jobs:
           exit-code: "0"
 
       - name: Upload Trivy report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: "trivy-report-${{ matrix.service }}"
           path: "trivy-${{ matrix.service }}.sarif"
