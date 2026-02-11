@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Install TeX Live and curl (for healthcheck). No build-essential needed
 # since we removed xhtml2pdf/pycairo.
