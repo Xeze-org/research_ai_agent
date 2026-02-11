@@ -1,4 +1,4 @@
-fastapi==0.115.*
+fastapi==0.128.*
 uvicorn[standard]==0.34.*
 mistralai
 duckduckgo-search
