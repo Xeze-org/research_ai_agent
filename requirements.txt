@@ -1,0 +1,9 @@
+mistralai
+python-dotenv
+duckduckgo-search
+markdown
+xhtml2pdf
+streamlit
+fpdf2
+
+
