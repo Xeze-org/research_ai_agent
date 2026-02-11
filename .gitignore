@@ -1,133 +1,76 @@
-# Python compiled files
+# ── Environment / Secrets ──────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python ────────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
-*.so
-
-# Distribution / packaging
-build/
-dist/
-downloads/
-eggs/
-.eggs/
 *.egg-info/
 *.egg
-pip-wheel-metadata/
-
-# Virtual environments
-venv/
 .venv/
+venv/
 env/
-ENV/
-env.bak/
-venv.bak/
-venv*/
-
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
+.Python
+*.pyo
 pip-log.txt
-pip-delete-this-directory.txt
 
-# Unit test / coverage
-.pytest_cache/
-.tox/
-.nox/
-htmlcov/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-.hypothesis/
+# ── Go ────────────────────────────────────────────────
+backend/tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 
-# Translations
-*.mo
-*.pot
+# ── Node / Frontend ──────────────────────────────────
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+.eslintcache
 
-# Django stuff
-*.log
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Flask instance folder
-instance/
-.webassets-cache
-
-# Scrapy
-.scrapy
-
-# Sphinx
-docs/_build/
-
-# PyBuilder
-target/
-
-# Jupyter
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-.python-version
-
-# pipenv
-Pipfile.lock
-
-# mypy
-.mypy_cache/
-.dmypy.json
-
-# Pyre
-.pyre/
-
-# IDEs and editors
+# ── IDE ───────────────────────────────────────────────
 .vscode/
 .idea/
-*.sublime-project
-*.sublime-workspace
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
 
-# OS files
+# ── OS ────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
 Thumbs.db
-desktop.ini
-~$*
+ehthumbs.db
+Desktop.ini
 
-# OneDrive temporary files
-~*.tmp
-*.lnk
+# ── Docker volumes (local) ───────────────────────────
+pg_data/
+mongo_data/
+minio_data/
 
-# dotenv / secrets
-.env
-.env.*
-secrets.json
-*.secret
-
-# Logs
+# ── LaTeX build artifacts ────────────────────────────
+*.aux
 *.log
-logs/
-*.log.*
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
 
-# Databases
-*.sqlite3
+# ── Generated files ──────────────────────────────────
+*.pdf
 *.db
-*.db-journal
+*.sqlite3
 
-# Byte-compiled / optimized / DLL files
-*.pyc
-*.pyo
-*.pyd
-
-# Other
-*.egg
-*.whl
-pip-log.txt
-__pycache__/
+# ── Legacy (old Streamlit app in repo root) ──────────
+/requirements.txt
+/run.bat
+/research_history.db
+/Investigate_the_feas.pdf
