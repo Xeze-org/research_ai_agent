@@ -108,28 +108,28 @@ flowchart LR
 
 ```mermaid
 sequenceDiagram
-    participant U as 🖥️ Frontend
-    participant B as ⚙️ Backend
-    participant R as ⚡ Redis
-    participant P as 🐘 PostgreSQL
+    participant U as Frontend
+    participant B as Backend
+    participant R as Redis
+    participant P as PostgreSQL
 
     Note over U,P: Registration
-    U->>B: POST /api/auth/register {username, email, password}
+    U->>B: POST /api/auth/register
     B->>B: bcrypt hash password
     B->>P: INSERT user
     P-->>B: user record
-    B-->>U: 200 {id, username, email}
+    B-->>U: 200 OK user object
 
     Note over U,R: Login
-    U->>B: POST /api/auth/login {email, password}
+    U->>B: POST /api/auth/login
     B->>P: SELECT user by email
     B->>B: bcrypt compare
-    B->>R: SET session:uuid → user_id (24h TTL)
-    B-->>U: Set-Cookie: session_id=uuid; HttpOnly
+    B->>R: SET session uuid to user_id (24h TTL)
+    B-->>U: Set-Cookie session_id HttpOnly
 
     Note over U,R: Authenticated Request
-    U->>B: GET /api/research/ (Cookie: session_id=uuid)
-    B->>R: GET session:uuid
+    U->>B: GET /api/research with session cookie
+    B->>R: GET session uuid
     R-->>B: user_id
     B->>B: Proceed with request
 ```
