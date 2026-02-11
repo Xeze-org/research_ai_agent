@@ -25,38 +25,44 @@ A modular microservices platform that generates **publication-quality LaTeX rese
 - **Configurable** — Choose AI model, research depth (Quick/Standard/Deep), and manage API keys from a dedicated settings page
 - **True Black UI** — Modern React frontend with shadcn/ui, Tailwind CSS, and a true-black dark theme
 - **Dockerized** — Full Docker Compose setup for both development and production
-- **CI/CD** — GitHub Actions workflow for versioned builds pushed to GitHub Container Registry
+- **CI/CD** — Per-service GitHub Actions builds + weekly Trivy security scans
 
 ---
 
 ## Architecture
 
-### Service Overview
+### Service Map
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Docker Network                           │
-│                                                                 │
-│  ┌──────────┐    ┌──────────┐    ┌─────────────┐               │
-│  │ Frontend │───▶│ Backend  │───▶│ AI Service  │               │
-│  │ React    │    │ Go / Chi │    │ Python/Fast │               │
-│  │ :5173    │    │ :8080    │    │ API  :8000  │               │
-│  └──────────┘    └────┬─────┘    └─────────────┘               │
-│                       │                                         │
-│                       │          ┌──────────────┐               │
-│                       ├─────────▶│ LaTeX Service│               │
-│                       │          │ Python/TeX   │               │
-│                       │          │ Live  :8001  │               │
-│                       │          └──────────────┘               │
-│                       │                                         │
-│              ┌────────┼────────┬──────────┐                     │
-│              ▼        ▼        ▼          ▼                     │
-│         ┌────────┐┌───────┐┌───────┐┌─────────┐               │
-│         │Postgres││MongoDB││ Redis ││  MinIO  │               │
-│         │ Users  ││Reports││Session││PDF/TeX  │               │
-│         │ :5432  ││ :27017││ :6379 ││ :9000   │               │
-│         └────────┘└───────┘└───────┘└─────────┘               │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Docker Network
+        FE["🖥️ Frontend<br/><i>React · Vite · TS</i><br/>:5173 / :80"]
+        BE["⚙️ Backend<br/><i>Go · Chi Router</i><br/>:8080"]
+        AI["🤖 AI Service<br/><i>Python · FastAPI · Mistral</i><br/>:8000"]
+        LX["📄 LaTeX Service<br/><i>Python · TeX Live · pdflatex</i><br/>:8001"]
+
+        PG[("🐘 PostgreSQL<br/><i>Users & Auth</i><br/>:5432")]
+        MG[("🍃 MongoDB<br/><i>Research Docs</i><br/>:27017")]
+        RD[("⚡ Redis<br/><i>Sessions</i><br/>:6379")]
+        MN[("📦 MinIO<br/><i>PDF & TeX Files</i><br/>:9000")]
+    end
+
+    FE -->|"HTTP /api/*"| BE
+    BE -->|"generate-queries<br/>search<br/>generate-report"| AI
+    BE -->|"compile-pdf<br/>compile-tex"| LX
+    BE --- PG
+    BE --- MG
+    BE --- RD
+    BE --- MN
+
+    style FE fill:#1a1a2e,stroke:#3b82f6,color:#e2e8f0
+    style BE fill:#1a1a2e,stroke:#10b981,color:#e2e8f0
+    style AI fill:#1a1a2e,stroke:#f59e0b,color:#e2e8f0
+    style LX fill:#1a1a2e,stroke:#ef4444,color:#e2e8f0
+    style PG fill:#0d1117,stroke:#3b82f6,color:#e2e8f0
+    style MG fill:#0d1117,stroke:#10b981,color:#e2e8f0
+    style RD fill:#0d1117,stroke:#ef4444,color:#e2e8f0
+    style MN fill:#0d1117,stroke:#f59e0b,color:#e2e8f0
 ```
 
 ### Services
@@ -72,73 +78,60 @@ A modular microservices platform that generates **publication-quality LaTeX rese
 | **Redis 7** | — | `6379` | Session storage and caching |
 | **MinIO** | — | `9000` | PDF and `.tex` file object storage |
 
-### Research Pipeline Flow
+### Research Pipeline
 
-```
-User enters topic
-        │
-        ▼
-┌───────────────────┐
-│  1. Generate      │  Backend → AI Service
-│     Search        │  POST /api/generate-queries
-│     Queries       │  Mistral AI creates 5 targeted queries
-└───────┬───────────┘
-        │
-        ▼
-┌───────────────────┐
-│  2. Web Search    │  Backend → AI Service
-│                   │  POST /api/search
-│                   │  DuckDuckGo scrapes results
-└───────┬───────────┘
-        │
-        ▼
-┌───────────────────┐
-│  3. Generate      │  Backend → AI Service
-│     LaTeX Report  │  POST /api/generate-report
-│                   │  Mistral AI writes full LaTeX body
-└───────┬───────────┘
-        │
-        ▼
-┌───────────────────┐
-│  4. Compile PDF   │  Backend → LaTeX Service
-│                   │  POST /api/compile-pdf
-│                   │  pdflatex compiles to PDF
-└───────┬───────────┘
-        │
-        ▼
-┌───────────────────┐
-│  5. Build .tex    │  Backend → LaTeX Service
-│                   │  POST /api/compile-tex
-│                   │  Wraps body in full document
-└───────┬───────────┘
-        │
-        ▼
-┌───────────────────┐
-│  6. Store         │  Backend → MinIO + MongoDB
-│                   │  Upload PDF/TeX to MinIO
-│                   │  Save metadata to MongoDB
-└───────────────────┘
+```mermaid
+flowchart LR
+    A["🔬 User enters\ntopic"] --> B["1️⃣ Generate\nSearch Queries"]
+    B --> C["2️⃣ Web Search\nDuckDuckGo"]
+    C --> D["3️⃣ Generate\nLaTeX Report"]
+    D --> E["4️⃣ Compile\nPDF"]
+    E --> F["5️⃣ Build\n.tex Source"]
+    F --> G["6️⃣ Store\nMinIO + MongoDB"]
+
+    B -.-|"Backend → AI Service"| AI1(("🤖"))
+    C -.-|"Backend → AI Service"| AI2(("🤖"))
+    D -.-|"Backend → AI Service"| AI3(("🤖"))
+    E -.-|"Backend → LaTeX Service"| LX1(("📄"))
+    F -.-|"Backend → LaTeX Service"| LX2(("📄"))
+
+    style A fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style B fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style C fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style D fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style E fill:#1e293b,stroke:#ef4444,color:#e2e8f0
+    style F fill:#1e293b,stroke:#ef4444,color:#e2e8f0
+    style G fill:#1e293b,stroke:#10b981,color:#e2e8f0
 ```
 
 ### Authentication Flow
 
-```
-Register/Login                    Authenticated Request
-     │                                    │
-     ▼                                    ▼
-┌──────────┐                     ┌──────────────┐
-│ Frontend │──POST /api/auth──▶  │   Backend    │
-│          │                     │              │
-│          │◀─Set-Cookie────────│  bcrypt hash  │
-│          │  session_id=xxx     │  + Redis SET  │
-└──────────┘                     └──────┬───────┘
-                                        │
-                                        ▼
-                                 ┌──────────────┐
-                                 │    Redis     │
-                                 │  session:xxx │
-                                 │  → user_id   │
-                                 └──────────────┘
+```mermaid
+sequenceDiagram
+    participant U as 🖥️ Frontend
+    participant B as ⚙️ Backend
+    participant R as ⚡ Redis
+    participant P as 🐘 PostgreSQL
+
+    Note over U,P: Registration
+    U->>B: POST /api/auth/register {username, email, password}
+    B->>B: bcrypt hash password
+    B->>P: INSERT user
+    P-->>B: user record
+    B-->>U: 200 {id, username, email}
+
+    Note over U,R: Login
+    U->>B: POST /api/auth/login {email, password}
+    B->>P: SELECT user by email
+    B->>B: bcrypt compare
+    B->>R: SET session:uuid → user_id (24h TTL)
+    B-->>U: Set-Cookie: session_id=uuid; HttpOnly
+
+    Note over U,R: Authenticated Request
+    U->>B: GET /api/research/ (Cookie: session_id=uuid)
+    B->>R: GET session:uuid
+    R-->>B: user_id
+    B->>B: Proceed with request
 ```
 
 ---
@@ -266,8 +259,7 @@ research_ai_agent/
 │   │   │   └── research/        # ReportView, SourcesList
 │   │   ├── hooks/               # useAuth, useResearch
 │   │   ├── lib/                 # API client, utilities
-│   │   ├── pages/               # LoginPage, RegisterPage, DashboardPage,
-│   │   │                        #   ReportPage, SettingsPage
+│   │   ├── pages/               # Login, Register, Dashboard, Report, Settings
 │   │   ├── types/               # TypeScript interfaces
 │   │   ├── App.tsx              # Router
 │   │   └── index.css            # True-black theme
@@ -286,7 +278,7 @@ research_ai_agent/
 │   ├── go.mod
 │   └── Dockerfile               # Multi-stage Go build
 │
-├── ai-service/                  # Python AI service (lightweight ~200MB)
+├── ai-service/                  # Python AI service (~200MB image)
 │   ├── app/
 │   │   ├── main.py              # FastAPI endpoints
 │   │   ├── ai.py                # Mistral AI query/report generation
@@ -296,7 +288,7 @@ research_ai_agent/
 │   ├── requirements.txt
 │   └── Dockerfile               # python:3.12-slim (no TeX Live)
 │
-├── latex-service/               # LaTeX compilation service (~2GB with TeX Live)
+├── latex-service/               # LaTeX compilation service (~2GB image)
 │   ├── app/
 │   │   ├── main.py              # FastAPI endpoints
 │   │   ├── latex.py             # pdflatex compilation + document builder
@@ -304,12 +296,18 @@ research_ai_agent/
 │   ├── requirements.txt
 │   └── Dockerfile               # python:3.12-slim + TeX Live + lmodern
 │
+├── .github/
+│   ├── dependabot.yml           # Automated dependency updates
+│   └── workflows/
+│       ├── build-backend.yml    # Manual: build & push backend
+│       ├── build-ai-service.yml # Manual: build & push AI service
+│       ├── build-latex-service.yml # Manual: build & push LaTeX service
+│       ├── build-frontend.yml   # Manual: build & push frontend
+│       └── security-scan.yml    # Weekly: Trivy image scan
+│
 ├── docker-compose.yml           # Production (pre-built ghcr.io images)
 ├── docker-compose.dev.yml       # Development (builds from source)
 ├── .env.example                 # Environment variable template
-├── .github/
-│   └── workflows/
-│       └── release.yml          # Build & push images + GitHub Release
 └── README.md
 ```
 
@@ -317,7 +315,7 @@ research_ai_agent/
 
 ## Docker Images
 
-All images are published to **GitHub Container Registry** on each release:
+All images are published to **GitHub Container Registry** on each build:
 
 | Service | Image | Size |
 |---------|-------|------|
@@ -338,13 +336,54 @@ docker pull ghcr.io/xeze-org/research-ai-agent-frontend:1.0.0
 
 ## CI/CD
 
-The project uses **GitHub Actions** for automated builds:
+### Manual Builds (per service)
 
-1. Go to **Actions** → **Build & Push Docker Images**
-2. Click **Run workflow**
-3. Enter a version (e.g., `1.0.0`)
-4. All 4 service images are built in parallel and pushed to ghcr.io
-5. A Git tag `v1.0.0` is created and a **GitHub Release** is published
+Each service has its **own workflow** — build only what changed:
+
+```mermaid
+graph LR
+    subgraph "GitHub Actions — Manual Dispatch"
+        B1["Build: Backend"] --> R1["ghcr.io/.../backend:tag"]
+        B2["Build: AI Service"] --> R2["ghcr.io/.../ai-service:tag"]
+        B3["Build: LaTeX Service"] --> R3["ghcr.io/.../latex-service:tag"]
+        B4["Build: Frontend"] --> R4["ghcr.io/.../frontend:tag"]
+    end
+
+    style B1 fill:#1e293b,stroke:#10b981,color:#e2e8f0
+    style B2 fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style B3 fill:#1e293b,stroke:#ef4444,color:#e2e8f0
+    style B4 fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style R1 fill:#0d1117,stroke:#10b981,color:#e2e8f0
+    style R2 fill:#0d1117,stroke:#f59e0b,color:#e2e8f0
+    style R3 fill:#0d1117,stroke:#ef4444,color:#e2e8f0
+    style R4 fill:#0d1117,stroke:#3b82f6,color:#e2e8f0
+```
+
+1. Go to **Actions** → pick the service workflow
+2. Click **Run workflow** → enter a version tag (e.g. `1.1.0`)
+3. Image is built, tagged, and pushed to ghcr.io
+
+### Weekly Security Scan
+
+```mermaid
+graph LR
+    S["⏰ Every Monday 06:00 UTC"] --> P["Pull latest images"]
+    P --> T["🔍 Trivy Scan<br/>CRITICAL + HIGH + MEDIUM"]
+    T --> SA["📊 SARIF → GitHub Security Tab"]
+    T --> AR["📦 Artifact Report (30 days)"]
+
+    style S fill:#1e293b,stroke:#f59e0b,color:#e2e8f0
+    style P fill:#1e293b,stroke:#3b82f6,color:#e2e8f0
+    style T fill:#1e293b,stroke:#ef4444,color:#e2e8f0
+    style SA fill:#0d1117,stroke:#10b981,color:#e2e8f0
+    style AR fill:#0d1117,stroke:#10b981,color:#e2e8f0
+```
+
+### Dependabot
+
+Automated dependency PRs are enabled for all ecosystems:
+- **npm** (frontend) · **gomod** (backend) · **pip** (ai-service, latex-service)
+- **Docker** base images · **GitHub Actions** versions
 
 ---
 
@@ -400,7 +439,7 @@ npm run dev
 | Auth | Session-based (Redis), bcrypt password hashing, HttpOnly cookies |
 | Databases | PostgreSQL 16 (users), MongoDB 7 (research), Redis 7 (sessions) |
 | Storage | MinIO (S3-compatible object storage for PDFs and .tex files) |
-| CI/CD | GitHub Actions, GitHub Container Registry (ghcr.io) |
+| CI/CD | GitHub Actions, Trivy, Dependabot, GitHub Container Registry (ghcr.io) |
 | Containers | Docker, Docker Compose |
 
 ---

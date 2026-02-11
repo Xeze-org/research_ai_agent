@@ -1,0 +1,89 @@
+version: 2
+
+updates:
+  # ── GitHub Actions ───────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "ci"]
+    commit-message:
+      prefix: "ci"
+
+  # ── Frontend (npm) ──────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "frontend"]
+    commit-message:
+      prefix: "deps(frontend)"
+    open-pull-requests-limit: 10
+
+  # ── Backend (Go modules) ────────────────────────────
+  - package-ecosystem: "gomod"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "backend"]
+    commit-message:
+      prefix: "deps(backend)"
+    open-pull-requests-limit: 10
+
+  # ── AI Service (pip) ────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/ai-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "ai-service"]
+    commit-message:
+      prefix: "deps(ai-service)"
+    open-pull-requests-limit: 5
+
+  # ── LaTeX Service (pip) ─────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/latex-service"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencies", "latex-service"]
+    commit-message:
+      prefix: "deps(latex-service)"
+    open-pull-requests-limit: 5
+
+  # ── Docker (Dockerfiles) ────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/ai-service"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/latex-service"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "deps(docker)"
+
+  - package-ecosystem: "docker"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    labels: ["dependencies", "docker"]
+    commit-message:
+      prefix: "deps(docker)"
