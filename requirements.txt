@@ -1,6 +1,0 @@
-mistralai
-python-dotenv
-duckduckgo-search
-streamlit
-xhtml2pdf
-tenacity
