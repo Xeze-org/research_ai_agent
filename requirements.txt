@@ -1,9 +1,6 @@
 mistralai
 python-dotenv
 duckduckgo-search
-markdown
-xhtml2pdf
 streamlit
-fpdf2
-
-
+xhtml2pdf
+tenacity
